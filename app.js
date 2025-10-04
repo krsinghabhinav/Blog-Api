@@ -28,7 +28,12 @@ const categoriesRoutes = require("./routes/categories_route");
 const blogRoutes = require("./routes/blog_route");
 const reviewRoutes = require("./routes/review_routes");
 const commentRoutes = require("./routes/commnet_route");
-
+const fileUpload = require("express-fileupload");
+app.use(
+  fileUpload({
+    useTempFiles: true,
+  })
+);
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

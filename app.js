@@ -14,8 +14,8 @@ app.use("/blog", blogRoutes);
 app.use("/review", reviewRoutes);
 app.use("/comment", commentRoutes);
 
-app.use("*", (req, res) => {
-  res.status(200).json({ message: "Bad request!!!" });
-});
+// app.use("*", (req, res) => {
+//   res.status(200).json({ message: "Bad request!!!" });
+// });
 
 module.exports = app;

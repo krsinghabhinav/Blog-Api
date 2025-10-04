@@ -5,12 +5,20 @@ const bcrypt = require("bcryptjs");
 const blogUser = require("../models/user_model");
 const jwt = require("jsonwebtoken");
 const checkAuth = require("../middleware/check_auth");
+
+const cloudinary = require("cloudinary").v2;
+cloudinary.config({
+  cloud_name: "dyit1jjef",
+  api_key: "743564427533897",
+  api_secret: "TR9TvJlNF5Blp6AcyZ0plQ0kqkQ",
+});
+
 // http://localhost:3000/user/signup
 // Signup Route
 router.post("/signup", async (req, res) => {
   try {
     const { firstName, lastName, userName, email, password } = req.body;
-
+    const file = req.files?.image;
     // 1. Check required fields
     if (!firstName || !lastName || !userName || !email || !password) {
       return res.status(400).json({ message: "All fields are required!" });
@@ -35,6 +43,8 @@ router.post("/signup", async (req, res) => {
     if (existingUser) {
       return res.status(400).json({ message: "Email already exists!" });
     }
+    // Upload image to Cloudinary
+    const result = await cloudinary.uploader.upload(file.tempFilePath);
 
     // 5. Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -47,6 +57,7 @@ router.post("/signup", async (req, res) => {
       userName,
       email,
       password: hashedPassword,
+      imageUrl: result.secure_url,
     });
 
     // 7. Save to DB

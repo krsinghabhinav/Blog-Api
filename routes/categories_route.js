@@ -5,14 +5,20 @@ const checkAuth = require("../middleware/check_auth");
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 const blogUser = require("../models/user_model");
+const cloudinary = require("cloudinary").v2;
+cloudinary.config({
+  cloud_name: "dyit1jjef",
+  api_key: "743564427533897",
+  api_secret: "TR9TvJlNF5Blp6AcyZ0plQ0kqkQ",
+});
 
 // POST: Add Blog Category
 // http://localhost:3000/categories/blogCategories
 
-route.post("/blogCategories", checkAuth, async (req, res) => {
+route.post("/addBlogCategories", checkAuth, async (req, res) => {
   try {
     const { CategoriesTitle, imageUrl } = req.body;
-
+    const file = req.files?.image;
     if (!CategoriesTitle) {
       return res.status(400).json({ message: "Title is required!" });
     }
@@ -27,6 +33,8 @@ route.post("/blogCategories", checkAuth, async (req, res) => {
         .status(403)
         .json({ message: "User account is deleted or inactive!" });
     }
+    // Upload image to Cloudinary
+    const result = await cloudinary.uploader.upload(file.tempFilePath);
 
     // ✅ Check if category already exists (case-insensitive, same user)
     const existCategories = await blogCategories.findOne({
@@ -42,7 +50,8 @@ route.post("/blogCategories", checkAuth, async (req, res) => {
       _id: new mongoose.Types.ObjectId(),
       userId: verify.userId,
       CategoriesTitle: CategoriesTitle.trim(),
-      imageUrl: imageUrl || "",
+      imageUrl: result.secure_url || "",
+      userName: verify.firstName + " " + verify.lastName,
     });
 
     await newCategory.save();

@@ -4,10 +4,16 @@ const Blog = require("../models/bolg_model");
 const checkAuth = require("../middleware/check_auth");
 const jwt = require("jsonwebtoken");
 const blogUser = require("../models/user_model");
-
+const cloudinary = require("cloudinary").v2;
+const Category = require("../models/categories_model");
+cloudinary.config({
+  cloud_name: "dyit1jjef",
+  api_key: "743564427533897",
+  api_secret: "TR9TvJlNF5Blp6AcyZ0plQ0kqkQ",
+});
 // POST: Add new Blog
 // http://localhost:3000/blog/addBlog
-route.post("/addBlog", checkAuth, async (req, res) => {
+/* route.post("/addBlog", checkAuth, async (req, res) => {
   try {
     const {
       Title,
@@ -17,7 +23,7 @@ route.post("/addBlog", checkAuth, async (req, res) => {
       CategoryDescription,
       userName,
     } = req.body;
-
+    const file = req.files?.image;
     // ✅ Validate required fields
     if (
       !Title ||
@@ -26,6 +32,62 @@ route.post("/addBlog", checkAuth, async (req, res) => {
       !CategoryDescription ||
       userName
     ) {
+      return res.status(400).json({
+        message:
+          "All required fields (Title, CategoryTitle, CategoryId, CategoryDescription) must be provided!",
+      });
+    }
+
+    const token = req.headers.authorization.split(" ")[1];
+    const verify = jwt.verify(token, process.env.JWT_SECRET || "yourSecretKey");
+    // Upload image to Cloudinary
+    const result = await cloudinary.uploader.upload(file.tempFilePath);
+
+    // ✅ Check if user exists and is not deleted
+    const user = await blogUser.findById(verify.userId);
+    if (!user || user.isDeleted) {
+      return res
+        .status(403)
+        .json({ message: "User account is deleted or inactive!" });
+    }
+
+    const exitstBlog = await Blog.findOne({
+      Title: { $regex: new RegExp(`^${Title}$`, "i") },
+      userId: verify.userId,
+    });
+    if (exitstBlog) {
+      return res.status(400).json({ message: "Blog already exists!" });
+    }
+    // ✅ Create new Blog
+    const newBlog = new Blog({
+      userId: verify.userId, // assign current user as owner
+      Title: Title.trim(),
+      imageUrl: result.secure_url || "",
+      CategoryTitle: CategoryTitle.trim(),
+      CategoryId: CategoryId,
+      CategoryDescription: CategoryDescription.trim(),
+      userName: verify.firstName + " " + verify.lastName,
+    });
+
+    await newBlog.save();
+
+    return res.status(201).json({
+      message: "Blog added successfully!",
+      Blog: newBlog,
+    });
+  } catch (err) {
+    console.error("Error while adding Blog:", err);
+    return res.status(500).json({ message: "Server Error: " + err.message });
+  }
+}); */
+
+/* route.post("/addBlog", checkAuth, async (req, res) => {
+  try {
+    const { Title, CategoryTitle, CategoryId, CategoryDescription } = req.body;
+    const file = req.files?.image;
+
+    // ✅ Validate required fields
+    if (!Title || !CategoryTitle || !CategoryId || !CategoryDescription) {
       return res.status(400).json({
         message:
           "All required fields (Title, CategoryTitle, CategoryId, CategoryDescription) must be provided!",
@@ -43,15 +105,111 @@ route.post("/addBlog", checkAuth, async (req, res) => {
         .json({ message: "User account is deleted or inactive!" });
     }
 
+    // ✅ Check if blog with same Title already exists for this user
+    const existBlog = await Blog.findOne({
+      Title: Title, // case-insensitive
+      userId: verify.userId,
+    });
+
+    if (existBlog) {
+      return res
+        .status(400)
+        .json({ message: `Blog with title "${Title}" already exists!` });
+    }
+
+    // ✅ Upload image only if file is provided
+    let imageUrl = "";
+    if (file) {
+      const result = await cloudinary.uploader.upload(file.tempFilePath);
+      imageUrl = result.secure_url;
+    }
+
     // ✅ Create new Blog
     const newBlog = new Blog({
       userId: verify.userId, // assign current user as owner
       Title: Title.trim(),
-      imageUrl: imageUrl || "",
+      imageUrl: imageUrl,
       CategoryTitle: CategoryTitle.trim(),
       CategoryId: CategoryId,
       CategoryDescription: CategoryDescription.trim(),
-      //   userName: user.firstName + " " + user.lastName,
+      userName: verify.firstName + " " + verify.lastName,
+    });
+
+    await newBlog.save();
+
+    return res.status(201).json({
+      message: "Blog added successfully!",
+      Blog: newBlog,
+    });
+  } catch (err) {
+    console.error("Error while adding Blog:", err);
+    return res.status(500).json({ message: "Server Error: " + err.message });
+  }
+});
+ */
+route.post("/addBlog", checkAuth, async (req, res) => {
+  try {
+    const { Title, CategoryTitle, CategoryId, CategoryDescription } = req.body;
+    const file = req.files?.image;
+
+    // ✅ Validate required fields
+    if (!Title || !CategoryTitle || !CategoryId || !CategoryDescription) {
+      return res.status(400).json({
+        message:
+          "All required fields (Title, CategoryTitle, CategoryId, CategoryDescription) must be provided!",
+      });
+    }
+
+    const token = req.headers.authorization.split(" ")[1];
+    const verify = jwt.verify(token, process.env.JWT_SECRET || "yourSecretKey");
+
+    // ✅ Check if user exists and is not deleted
+    const user = await blogUser.findById(verify.userId);
+    if (!user || user.isDeleted) {
+      return res
+        .status(403)
+        .json({ message: "User account is deleted or inactive!" });
+    }
+
+    // ✅ Check if blog with same Title already exists (case-insensitive)
+    const existBlog = await Blog.findOne({
+      Title: { $regex: new RegExp(`^${Title}$`, "i") },
+      userId: verify.userId,
+    });
+
+    if (existBlog) {
+      return res
+        .status(400)
+        .json({ message: `Blog with title "${Title}" already exists!` });
+    }
+
+    // ✅ Check if Category exists for this user
+    const catTitle = await Category.findOne({
+      CategoriesTitle: CategoryTitle,
+      userId: verify.userId,
+    });
+
+    if (!catTitle) {
+      return res.status(400).json({
+        message: `Category "${CategoryTitle}" does not exist for this user!`,
+      });
+    }
+
+    // ✅ Upload image only if file is provided
+    let imageUrl = "";
+    if (file) {
+      const result = await cloudinary.uploader.upload(file.tempFilePath);
+      imageUrl = result.secure_url;
+    }
+
+    // ✅ Create new Blog
+    const newBlog = new Blog({
+      userId: verify.userId, // assign current user as owner
+      Title: Title.trim(),
+      imageUrl: imageUrl,
+      CategoryTitle: CategoryTitle.trim(),
+      CategoryId: CategoryId,
+      CategoryDescription: CategoryDescription.trim(),
       userName: verify.firstName + " " + verify.lastName,
     });
 

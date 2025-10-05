@@ -57,7 +57,7 @@ router.post("/signup", async (req, res) => {
       userName,
       email,
       password: hashedPassword,
-      imageUrl: result.secure_url,
+      imageUrl: result.secure_url || "",
     });
 
     // 7. Save to DB

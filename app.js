@@ -30,7 +30,7 @@ const categoriesRoutes = require("./routes/categories_route");
 const blogRoutes = require("./routes/blog_route");
 const reviewRoutes = require("./routes/review_routes");
 const commentRoutes = require("./routes/commnet_route");
-
+const LikeDislikeRoutes = require("./routes/like_and_dislike_route");
 // Create Express app
 const app = express();
 
@@ -62,6 +62,7 @@ app.use("/categories", categoriesRoutes);
 app.use("/blog", blogRoutes);
 app.use("/review", reviewRoutes);
 app.use("/comment", commentRoutes);
+app.use("/like", LikeDislikeRoutes);
 
 // Optional: handle undefined routes
 // app.use("*", (req, res) => {

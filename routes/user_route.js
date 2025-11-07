@@ -183,7 +183,7 @@ router.post("/forgot-password", async (req, res) => {
   }
 });
 // Route: Logged-in user can change password
-router.post("/change-password", CheckAuth, async (req, res) => {
+router.post("/change-password", checkAuth, async (req, res) => {
   try {
     const { newPassword } = req.body;
 
